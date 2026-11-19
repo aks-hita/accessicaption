@@ -32,7 +32,9 @@ def demo_caption(image_source: str, model_path: str) -> None:
     from io import BytesIO
 
     if image_source.startswith("http"):
-        response = requests.get(image_source, timeout=10)
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+        response = requests.get(image_source, headers=headers, timeout=15)
+        response.raise_for_status()
         image = PIL.Image.open(BytesIO(response.content)).convert("RGB")
     else:
         image = PIL.Image.open(image_source).convert("RGB")
