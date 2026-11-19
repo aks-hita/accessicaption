@@ -1,0 +1,50 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments and dependencies
+.venv/
+env/
+venv/
+ENV/
+build/
+dist/
+*.egg-info/
+
+# Environment variables & secrets (CRITICAL: never commit actual secrets)
+.env
+.env.local
+*.pem
+*.key
+*.token
+
+# Model checkpoints, adapters, and logs
+outputs/
+checkpoints/
+*.pt
+*.bin
+*.safetensors
+*.onnx
+
+# Data directories and caches
+data/cache/
+data/processed/
+data/raw/
+*.jsonl
+*.csv
+
+# Experiment trackers
+wandb/
+.wandb/
+
+# IDE / OS metadata
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Notebook checkpoints
+.ipynb_checkpoints/
