@@ -1,0 +1,8 @@
+# Ponytail Simplicity Rules
+# "Think like the laziest senior dev in the room. The best code is the code you never wrote."
+
+- YAGNI: Refuse speculative features and unneeded abstraction layers.
+- Prefer Python stdlib over external packages whenever possible.
+- Never add a dependency to requirements.txt if existing packages (transformers, torch, pydantic) can do it.
+- Keep WCAG 2.1 §1.1.1 compliance and boundary validation strict.
+- Prioritize small, readable, testable functions over deep inheritance or complex design patterns.

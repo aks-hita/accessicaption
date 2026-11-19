@@ -1,50 +1,33 @@
-# ── Core ML ──────────────────────────────────────────────────────────────────
+# ── Core ML & Training ────────────────────────────────────────────────────────
 torch>=2.2.0
 torchvision>=0.17.0
 transformers>=4.40.0
-peft>=0.10.0                  # LoRA / QLoRA adapters
-bitsandbytes>=0.43.0          # 4-bit quantization (QLoRA)
-accelerate>=0.29.0            # multi-GPU / mixed precision
-datasets>=2.19.0              # HuggingFace datasets
-einops>=0.7.0
-sentencepiece>=0.2.0
+peft>=0.10.0
+bitsandbytes>=0.43.0
+accelerate>=0.29.0
+datasets>=2.19.0
+trl>=0.8.6
+wandb>=0.17.0
 
-# ── Training utilities ───────────────────────────────────────────────────────
-trl>=0.8.6                    # SFTTrainer for VLM fine-tuning
-wandb>=0.17.0                 # Experiment tracking (free tier)
-deepspeed>=0.14.0             # Optional: ZeRO-2 for multi-GPU
-
-# ── Data & image processing ──────────────────────────────────────────────────
+# ── Data & Image Processing ──────────────────────────────────────────────────
 Pillow>=10.3.0
-pycocotools>=2.0.7            # COCO dataset tools
+pycocotools>=2.0.7
 requests>=2.31.0
 tqdm>=4.66.0
 numpy>=1.26.0
 pandas>=2.2.0
-scikit-learn>=1.4.0
+PyYAML>=6.0.1
 
-# ── Evaluation metrics ───────────────────────────────────────────────────────
-sacrebleu>=2.4.0              # BLEU
-nltk>=3.8.1                   # METEOR
-pycocoevalcap>=1.2            # CIDEr, SPICE, ROUGE-L (COCO eval)
+# ── Evaluation Metrics ───────────────────────────────────────────────────────
+sacrebleu>=2.4.0
+nltk>=3.8.1
 
-# ── API server ───────────────────────────────────────────────────────────────
+# ── API Server & Serving ────────────────────────────────────────────────────
 fastapi>=0.111.0
 uvicorn[standard]>=0.29.0
-python-multipart>=0.0.9       # file uploads
+python-multipart>=0.0.9
 pydantic>=2.7.0
-slowapi>=0.1.9                # rate limiting
-python-jose[cryptography]>=3.3.0  # JWT / API key signing
-
-# ── HuggingFace Spaces / demo ─────────────────────────────────────────────────
 gradio>=4.31.0
 
-# ── Content moderation ───────────────────────────────────────────────────────
-detoxify>=0.5.2               # text toxicity (post-caption check)
-# Image-level NSFW: use transformers pipeline (Falconsai/nsfw_image_detection)
-
-# ── Dev / testing ────────────────────────────────────────────────────────────
+# ── Testing ──────────────────────────────────────────────────────────────────
 pytest>=8.2.0
-httpx>=0.27.0                 # async test client for FastAPI
-black>=24.4.0
-isort>=5.13.0
