@@ -62,6 +62,10 @@ class CaptionRequestOptions(BaseModel):
         le=2.0,
         description="Sampling temperature. 0 = greedy decoding.",
     )
+    detail_level: str = Field(
+        "baseline",
+        description="Detail tier: 'baseline' (1-sentence alt-text), 'detailed' (2-3 sentences), or 'layered'.",
+    )
 
 
 class ContentFilterResult(BaseModel):
@@ -151,6 +155,8 @@ class CaptionResponse(BaseModel):
     )
     request_id: str = Field(..., description="UUID4 identifier for this request.")
     model_version: str = Field(..., description="Model version string.")
+    detail_level: str = Field("baseline", description="Detail tier used: 'baseline', 'detailed', or 'layered'.")
+    layers: dict[str, str] = Field(default_factory=dict, description="Structured layers if detail_level='layered'.")
 
 
 class BatchCaptionResponse(BaseModel):

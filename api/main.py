@@ -397,6 +397,7 @@ def _build_caption_response(
         confidence_threshold=options.confidence_threshold,
         max_new_tokens=options.max_new_tokens,
         temperature=options.temperature,
+        detail_level=options.detail_level,
     )
 
     try:
@@ -420,6 +421,8 @@ def _build_caption_response(
             confidence=result.confidence,
             flagged=True,
             latency_ms=result.latency_ms,
+            detail_level=result.detail_level,
+            layers=result.layers,
         )
 
     logger.info(
@@ -439,6 +442,8 @@ def _build_caption_response(
         latency_ms=result.latency_ms,
         request_id=request_id,
         model_version=Captioner.MODEL_VERSION,
+        detail_level=result.detail_level,
+        layers=result.layers,
     )
 
 

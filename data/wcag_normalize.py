@@ -69,7 +69,7 @@ _SENTENCE_END_RE: re.Pattern[str] = re.compile(r"(?<=[.!?])\s+")
 # ---------------------------------------------------------------------------
 
 
-def normalize_caption(text: str) -> str:
+def normalize_caption(text: str, max_chars: int | None = MAX_CAPTION_CHARS) -> str:
     """Apply WCAG 2.1/2.2 alt-text normalization rules to a single caption.
 
     Rules applied in order:
@@ -123,9 +123,9 @@ def normalize_caption(text: str) -> str:
     if result and result[-1] not in {".", "!", "?"}:
         result += "."
 
-    # 6. Truncate at sentence boundary if too long
-    if len(result) > MAX_CAPTION_CHARS:
-        result = _truncate_at_sentence(result, MAX_CAPTION_CHARS)
+    # 6. Truncate at sentence boundary if too long and max_chars is specified
+    if max_chars is not None and len(result) > max_chars:
+        result = _truncate_at_sentence(result, max_chars)
 
     # 7. Reject forbidden first words — prefix with a neutral placeholder
     first_word = result.split()[0].rstrip(".,!?").lower() if result else ""

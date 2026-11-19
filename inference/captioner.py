@@ -22,15 +22,44 @@ from PIL import Image, ImageOps
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Prompt template
+# Prompt templates per detail level
 # ---------------------------------------------------------------------------
-LLAVA_PROMPT = (
-    "USER: <image>\n"
-    "Describe this image in one to two sentences as alt-text for a visually "
-    "impaired person. Focus on the main subject, context, and any important "
-    "text visible. Do not start with 'Image of' or 'Photo of'.\n"
-    "ASSISTANT:"
-)
+
+PROMPTS = {
+    # Layer 1: Concise alt-text with strict spatial grounding (no hallucination)
+    "baseline": (
+        "USER: <image>\n"
+        "Provide a concise, strictly factual 1-sentence alt-text for a visually impaired user. "
+        "Strict spatial rules:\n"
+        "- Verify physical support surfaces: accurately state what is below/beneath versus on structures.\n"
+        "- Mention all primary subjects and any visible people in the scene.\n"
+        "- Do not start with 'Image of' or 'Photo of'.\n"
+        "ASSISTANT:"
+    ),
+    # Layer 2: Detailed scene description covering all people and surroundings
+    "detailed": (
+        "USER: <image>\n"
+        "Provide a detailed 2 to 3 sentence scene description for a visually impaired user. "
+        "Rules:\n"
+        "- Describe all visible people, their actions, and spatial positions (foreground, midground, background).\n"
+        "- Accurately verify physical locations (e.g. under/below an arched bridge versus on top of it).\n"
+        "- Describe environmental lighting, water/ground, and background buildings or landscape.\n"
+        "- Do not start with 'Image of' or 'Photo of'.\n"
+        "ASSISTANT:"
+    ),
+    # Layer 3: Comprehensive progressive disclosure (Alt-Text, Scene, Spatial Layout)
+    "layered": (
+        "USER: <image>\n"
+        "Analyze this image for accessibility and provide a 3-layer breakdown:\n"
+        "Layer 1 (Alt-Text): 1 concise factual sentence with verified spatial relationships.\n"
+        "Layer 2 (Detailed Scene): 2-3 sentences describing all people, actions, and environmental context.\n"
+        "Layer 3 (Spatial Layout): Specific breakdown of Foreground, Midground, and Background.\n"
+        "Be strictly accurate about spatial relationships (e.g. what is below/under structures vs on them).\n"
+        "ASSISTANT:"
+    ),
+}
+
+LLAVA_PROMPT = PROMPTS["baseline"]
 
 # Target size for LLaVA vision encoder
 TARGET_SIZE = 336
@@ -48,11 +77,14 @@ class CaptionOptions:
     confidence_threshold: float = 0.75
     """Minimum confidence below which the result is flagged."""
 
-    max_new_tokens: int = 80
+    max_new_tokens: int = 100
     """Maximum number of new tokens to generate."""
 
     temperature: float = 0.2
     """Sampling temperature (lower → more deterministic)."""
+
+    detail_level: str = "baseline"
+    """Detail tier: 'baseline' (1-sentence alt-text), 'detailed' (2-3 sentences), or 'layered' (3 tiers)."""
 
 
 @dataclass
@@ -70,6 +102,12 @@ class CaptionResult:
 
     latency_ms: float
     """Wall-clock inference time in milliseconds."""
+
+    detail_level: str = "baseline"
+    """Detail level used to generate this caption."""
+
+    layers: dict[str, str] = field(default_factory=dict)
+    """Dictionary of individual layers when detail_level='layered'."""
 
 
 # ---------------------------------------------------------------------------
@@ -248,10 +286,11 @@ class Captioner:
         self._device = next(self._model.parameters()).device
         logger.info("Model loaded on device: %s", self._device)
 
-    def _build_inputs(self, image: Image.Image) -> dict:
+    def _build_inputs(self, image: Image.Image, detail_level: str = "baseline") -> dict:
         """Tokenise *prompt* + *image* into model inputs."""
+        prompt = PROMPTS.get(detail_level, PROMPTS["baseline"])
         inputs = self._processor(
-            text=LLAVA_PROMPT,
+            text=prompt,
             images=image,
             return_tensors="pt",
         )
@@ -260,23 +299,6 @@ class Captioner:
     def _estimate_confidence(self, logits: torch.Tensor) -> float:
         """
         Estimate generation confidence from logit entropy.
-
-        Strategy: take the top-k=50 logits at each generation step, compute
-        softmax probabilities, calculate per-step Shannon entropy, average
-        across steps, then convert to a confidence score via
-        ``1 - normalized_entropy``.
-
-        Parameters
-        ----------
-        logits:
-            Tensor of shape ``(seq_len, vocab_size)`` — the stacked per-step
-            logits returned by ``generate(..., return_dict_in_generate=True,
-            output_scores=True)``.
-
-        Returns
-        -------
-        float
-            Confidence in ``[0, 1]``.
         """
         from inference.confidence import estimate_confidence_logit_variance  # type: ignore
 
@@ -312,12 +334,24 @@ class Captioner:
         pil_image = load_image(image)
         t0 = time.perf_counter()
 
-        inputs = self._build_inputs(pil_image)
+        level = options.detail_level if options.detail_level in PROMPTS else "baseline"
+        inputs = self._build_inputs(pil_image, detail_level=level)
+
+        # Adapt token budget & truncation based on detail level
+        if level == "baseline":
+            max_tokens = min(options.max_new_tokens, 100)
+            max_chars = 180
+        elif level == "detailed":
+            max_tokens = max(options.max_new_tokens, 160)
+            max_chars = 600
+        else:  # layered
+            max_tokens = max(options.max_new_tokens, 260)
+            max_chars = None
 
         with torch.inference_mode():
             output = self._model.generate(
                 **inputs,
-                max_new_tokens=options.max_new_tokens,
+                max_new_tokens=max_tokens,
                 temperature=options.temperature,
                 do_sample=options.temperature > 0,
                 return_dict_in_generate=True,
@@ -330,7 +364,7 @@ class Captioner:
         input_len = inputs["input_ids"].shape[-1]
         generated_ids = output.sequences[0, input_len:]
         raw_caption = self._processor.decode(generated_ids, skip_special_tokens=True)
-        caption = wcag_normalize(raw_caption.strip())
+        caption = wcag_normalize(raw_caption.strip(), max_chars=max_chars)
 
         # Confidence from stacked scores
         if output.scores:
@@ -339,12 +373,34 @@ class Captioner:
         else:
             confidence = 0.0
 
+        layers_dict = {}
+        if level == "layered":
+            layers_dict["full_text"] = caption
+
         return CaptionResult(
             caption=caption,
             confidence=confidence,
             flagged=confidence < options.confidence_threshold,
             latency_ms=latency_ms,
+            detail_level=level,
+            layers=layers_dict,
         )
+
+    def caption_multilevel(
+        self,
+        image: Union[str, bytes, Path, Image.Image],
+    ) -> dict[str, str]:
+        """
+        Convenience method to return progressive disclosure layers:
+        - Layer 1 (Baseline Alt-Text): Concise, strictly grounded alt-text.
+        - Layer 2 (Detailed Description): Full scene breakdown including people & context.
+        """
+        res_baseline = self.caption(image, CaptionOptions(detail_level="baseline"))
+        res_detailed = self.caption(image, CaptionOptions(detail_level="detailed"))
+        return {
+            "layer_1_baseline_alt_text": res_baseline.caption,
+            "layer_2_detailed_scene": res_detailed.caption,
+        }
 
     def caption_batch(
         self,
