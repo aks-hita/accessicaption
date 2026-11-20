@@ -26,34 +26,35 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 PROMPTS = {
-    # Layer 1: Concise alt-text with strict spatial grounding and small object awareness
+    # Layer 1: Concise alt-text with strict spatial grounding and anti-hallucination rules
     "baseline": (
         "USER: <image>\n"
-        "You are an accessibility visual assistant. Carefully inspect the image:\n"
-        "1. Identify all primary subjects AND smaller secondary objects resting near them (e.g. remotes, devices, items).\n"
-        "2. Identify all people and their exact physical support (e.g. sitting on the ground beneath/under an arched bridge, NOT on top of it).\n"
-        "3. Provide a single, factually grounded alt-text sentence describing the subjects, their verified positions, and any important nearby objects.\n"
-        "Do not start with 'Image of' or 'Photo of'.\n"
+        "You are an accessibility visual assistant. Describe this image in one concise, strictly factual alt-text sentence for a visually impaired user.\n"
+        "Crucial rules:\n"
+        "- Describe only what is unambiguously visible. Do not guess or assume objects that are not clearly identifiable.\n"
+        "- Verify physical support surfaces: accurately state what is below/beneath versus on top of structures.\n"
+        "- Mention all distinct people and primary subjects present.\n"
+        "- Do not start with 'Image of' or 'Photo of'.\n"
         "ASSISTANT:"
     ),
-    # Layer 2: Detailed scene description covering all people, objects, and surroundings
+    # Layer 2: Detailed scene description covering visible people, objects, and surroundings
     "detailed": (
         "USER: <image>\n"
-        "You are an accessibility visual assistant. Provide a detailed 2 to 3 sentence scene description:\n"
-        "1. List all primary subjects and notable handheld or resting objects (e.g. remote controls, phones, bags).\n"
-        "2. Accurately specify physical support: distinguish what is underneath/below an arched structure versus on top of it.\n"
-        "3. Describe all people present, their actions, and the surrounding environment.\n"
-        "Do not start with 'Image of' or 'Photo of'.\n"
+        "You are an accessibility visual assistant. Provide a detailed 2 to 3 sentence description for a visually impaired user:\n"
+        "- Describe only clearly visible subjects, secondary objects, and people across foreground, midground, and background.\n"
+        "- Accurately specify physical locations and support surfaces (e.g. resting on the ground, sitting beneath an arch, etc.).\n"
+        "- Do not speculate or invent objects. Describe lighting and surroundings.\n"
+        "- Do not start with 'Image of' or 'Photo of'.\n"
         "ASSISTANT:"
     ),
     # Layer 3: Comprehensive progressive disclosure (Alt-Text, Scene, Spatial Layout)
     "layered": (
         "USER: <image>\n"
         "Analyze this image for accessibility and provide a 3-layer breakdown:\n"
-        "Layer 1 (Alt-Text): 1 factual sentence with verified spatial relationships and visible secondary objects.\n"
-        "Layer 2 (Detailed Scene): 2-3 sentences covering all people, actions, nearby items, and environmental context.\n"
+        "Layer 1 (Alt-Text): 1 factual sentence with verified spatial relationships.\n"
+        "Layer 2 (Detailed Scene): 2-3 sentences describing all confirmed people, items, and environmental context.\n"
         "Layer 3 (Spatial Layout): Specific breakdown of Foreground, Midground, and Background.\n"
-        "Ensure spatial positions are strictly accurate (e.g. what is beneath/below a structure vs on it).\n"
+        "Describe strictly what is visually present without guessing.\n"
         "ASSISTANT:"
     ),
 }
