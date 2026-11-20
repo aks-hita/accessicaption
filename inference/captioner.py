@@ -114,16 +114,9 @@ class CaptionResult:
 # WCAG normalization (inline fallback if data.wcag_normalize is unavailable)
 # ---------------------------------------------------------------------------
 
-def _wcag_normalize(text: str) -> str:
+def _wcag_normalize(text: str, max_chars: int | None = 150) -> str:
     """
     Apply lightweight WCAG 2.1 alt-text normalization.
-
-    Rules applied:
-    - Strip leading/trailing whitespace.
-    - Remove forbidden prefixes ("Image of", "Photo of", "Picture of", etc.).
-    - Ensure the sentence ends with a period.
-    - Collapse multiple spaces.
-    - Truncate to 150 characters with ellipsis if necessary.
     """
     import re
 
@@ -147,15 +140,15 @@ def _wcag_normalize(text: str) -> str:
     if text and text[-1] not in {".", "!", "?"}:
         text += "."
 
-    # Truncate safely at word boundary
-    if len(text) > 150:
-        text = text[:147].rsplit(" ", 1)[0] + "…"
+    # Truncate safely at word boundary if max_chars is specified
+    if max_chars is not None and len(text) > max_chars:
+        text = text[: max_chars - 3].rsplit(" ", 1)[0] + "…"
 
     return text
 
 
 try:
-    from data.wcag_normalize import wcag_normalize  # type: ignore
+    from data.wcag_normalize import normalize_caption as wcag_normalize  # type: ignore
 except ImportError:
     wcag_normalize = _wcag_normalize
 

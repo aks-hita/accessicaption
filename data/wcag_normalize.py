@@ -151,6 +151,10 @@ def batch_normalize(captions: list[str]) -> list[str]:
     return [normalize_caption(c) for c in captions]
 
 
+# Alias for backwards compatibility
+wcag_normalize = normalize_caption
+
+
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
