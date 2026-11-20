@@ -40,11 +40,12 @@ PROMPTS = {
     # Layer 2: Detailed scene description covering visible people, objects, and surroundings
     "detailed": (
         "USER: <image>\n"
-        "You are an accessibility visual assistant. Provide a detailed 2 to 3 sentence description for a visually impaired user:\n"
-        "- Describe only clearly visible subjects, secondary objects, and people across foreground, midground, and background.\n"
-        "- Accurately specify physical locations and support surfaces (e.g. resting on the ground, sitting beneath an arch, etc.).\n"
-        "- Do not speculate or invent objects. Describe lighting and surroundings.\n"
-        "- Do not start with 'Image of' or 'Photo of'.\n"
+        "You are an accessibility visual assistant. Provide a comprehensive, multi-sentence scene description for a visually impaired user. "
+        "Write at least three complete sentences:\n"
+        "1. Describe the primary subjects and any key objects resting near them.\n"
+        "2. Describe all visible people, their positions (foreground, midground, background), and what they are doing.\n"
+        "3. Describe the surrounding environment, physical setting (e.g. water, ground, architectural structures), and lighting.\n"
+        "Do not start with 'Image of' or 'Photo of'.\n"
         "ASSISTANT:"
     ),
     # Layer 3: Comprehensive progressive disclosure (Alt-Text, Scene, Spatial Layout)
@@ -333,18 +334,22 @@ class Captioner:
         # Adapt token budget & truncation based on detail level
         if level == "baseline":
             max_tokens = min(options.max_new_tokens, 100)
+            min_tokens = 10
             max_chars = 180
         elif level == "detailed":
-            max_tokens = max(options.max_new_tokens, 160)
-            max_chars = 600
+            max_tokens = max(options.max_new_tokens, 180)
+            min_tokens = 45  # forces comprehensive multi-sentence generation
+            max_chars = 800
         else:  # layered
             max_tokens = max(options.max_new_tokens, 260)
+            min_tokens = 70  # forces multi-layer progressive output
             max_chars = None
 
         with torch.inference_mode():
             output = self._model.generate(
                 **inputs,
                 max_new_tokens=max_tokens,
+                min_new_tokens=min_tokens,
                 temperature=options.temperature,
                 do_sample=options.temperature > 0,
                 return_dict_in_generate=True,
