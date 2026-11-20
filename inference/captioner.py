@@ -26,25 +26,25 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 PROMPTS = {
-    # Layer 1: Concise alt-text with strict spatial grounding and anti-hallucination rules
+    # Layer 1: Concise alt-text with strict spatial grounding, orientation, and anti-hallucination rules
     "baseline": (
         "USER: <image>\n"
-        "You are an accessibility visual assistant. Describe this image in one concise, strictly factual alt-text sentence for a visually impaired user.\n"
-        "Crucial rules:\n"
-        "- Describe only what is unambiguously visible. Do not guess or assume objects that are not clearly identifiable.\n"
+        "You are an accessibility visual assistant for blind and low-vision users. Describe this image in one concise, strictly factual alt-text sentence.\n"
+        "Rules:\n"
+        "- If signs, labels, or text are visible, verify their physical orientation (e.g. state explicitly if a sign is mounted upside-down or inverted, and state the true intended word rather than reading inverted letters as other words).\n"
         "- Verify physical support surfaces: accurately state what is below/beneath versus on top of structures.\n"
-        "- Mention all distinct people and primary subjects present.\n"
+        "- Describe only what is unambiguously visible without guessing.\n"
         "- Do not start with 'Image of' or 'Photo of'.\n"
         "ASSISTANT:"
     ),
-    # Layer 2: Detailed scene description covering visible people, objects, and surroundings
+    # Layer 2: Detailed scene description covering visible people, objects, orientations, and surroundings
     "detailed": (
         "USER: <image>\n"
-        "You are an accessibility visual assistant. Provide a comprehensive, multi-sentence scene description for a visually impaired user. "
+        "You are an accessibility visual assistant for blind and low-vision users. Provide a comprehensive, multi-sentence scene description. "
         "Write at least three complete sentences:\n"
-        "1. Describe the primary subjects and any key objects resting near them.\n"
-        "2. Describe all visible people, their positions (foreground, midground, background), and what they are doing.\n"
-        "3. Describe the surrounding environment, physical setting (e.g. water, ground, architectural structures), and lighting.\n"
+        "1. Describe the primary subjects, any signage or text, and explicitly state physical orientation (e.g. note if any sign or object is upside-down or unusual).\n"
+        "2. Describe all visible people, their positions, and any notable secondary items or vehicles.\n"
+        "3. Describe the surrounding environment, physical setting (e.g. parking lot, road, trees, lighting), and background.\n"
         "Do not start with 'Image of' or 'Photo of'.\n"
         "ASSISTANT:"
     ),
@@ -52,8 +52,8 @@ PROMPTS = {
     "layered": (
         "USER: <image>\n"
         "Analyze this image for accessibility and provide a 3-layer breakdown:\n"
-        "Layer 1 (Alt-Text): 1 factual sentence with verified spatial relationships.\n"
-        "Layer 2 (Detailed Scene): 2-3 sentences describing all confirmed people, items, and environmental context.\n"
+        "Layer 1 (Alt-Text): 1 factual sentence with verified spatial relationships and orientation anomalies (e.g. upside-down signs).\n"
+        "Layer 2 (Detailed Scene): 2-3 sentences describing all confirmed objects, text, people, and environmental context.\n"
         "Layer 3 (Spatial Layout): Specific breakdown of Foreground, Midground, and Background.\n"
         "Describe strictly what is visually present without guessing.\n"
         "ASSISTANT:"
