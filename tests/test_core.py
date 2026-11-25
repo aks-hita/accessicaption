@@ -1,5 +1,5 @@
 """
-AccessiCaption test suite — sanity checks for WCAG normalization, API models,
+AccessiCaption test suite — sanity checks for WCAG normalization
 and confidence estimation. Can be run without a GPU.
 """
 
@@ -63,36 +63,6 @@ class TestWCAGNormalize:
         for r in results:
             assert not r.lower().startswith("image")
             assert not r.lower().startswith("photo")
-
-
-# ── API Model tests ───────────────────────────────────────────────────────────
-
-class TestAPIModels:
-    def test_caption_request_defaults(self):
-        from api.models import CaptionRequest, ContentFilterLevel
-        req = CaptionRequest(image="base64data==")
-        assert req.options.confidence_threshold == 0.75
-        assert req.options.content_filter_level == ContentFilterLevel.moderate
-
-    def test_confidence_threshold_validation(self):
-        import pytest
-        from pydantic import ValidationError
-        from api.models import CaptionRequestOptions
-        with pytest.raises(ValidationError):
-            CaptionRequestOptions(confidence_threshold=1.5)  # > 1.0, invalid
-
-    def test_batch_request_max_images(self):
-        import pytest
-        from pydantic import ValidationError
-        from api.models import BatchCaptionRequest
-        with pytest.raises(ValidationError):
-            BatchCaptionRequest(images=["img"] * 51)  # > 50, invalid
-
-    def test_content_filter_level_enum(self):
-        from api.models import ContentFilterLevel
-        assert ContentFilterLevel.strict == "strict"
-        assert ContentFilterLevel.moderate == "moderate"
-        assert ContentFilterLevel.off == "off"
 
 
 # ── Confidence estimation tests (no GPU needed) ───────────────────────────────

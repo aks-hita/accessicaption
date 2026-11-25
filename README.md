@@ -1,16 +1,13 @@
 # AccessiCaption 🦾
 
-> **WCAG-compliant image alt-text generation API — built for visual disability aid**
+> **WCAG-compliant image alt-text generation — built for visual disability aid**
 
-A fine-tuned Vision-Language Model (VLM) that takes any image and generates a descriptive 1–2 sentence alt-text caption conforming to WCAG 2.1/2.2 §1.1.1. Designed as a B2B REST API for developers building assistive technology products.
+A fine-tuned Vision-Language Model (VLM) that takes any image and generates descriptive alt-text captions conforming to WCAG 2.1/2.2 §1.1.1, with multi-level detail tiers and confidence scoring.
 
 ## Architecture
 
 ```
 Image Input
-    │
-    ▼
-Content Filter (NSFW classifier — configurable per API key)
     │
     ▼
 LLaVA-1.5-7B + QLoRA Adapter (fine-tuned on COCO + VizWiz)
@@ -19,10 +16,10 @@ LLaVA-1.5-7B + QLoRA Adapter (fine-tuned on COCO + VizWiz)
 WCAG Normalizer (strip "image of", active voice, length clamp)
     │
     ▼
-Confidence Estimator (logit variance → 0–1 score)
+Confidence Estimator (logit entropy → 0–1 score)
     │
     ▼
-JSON Response {caption, confidence, flagged, latency_ms}
+CaptionResult {caption, confidence, flagged, latency_ms}
 ```
 
 ## Project Structure
@@ -30,26 +27,23 @@ JSON Response {caption, confidence, flagged, latency_ms}
 ```
 accessicaption/
 ├── configs/
-│   └── config.yaml          # All hyperparameters + API settings
+│   └── config.yaml          # All hyperparameters
 ├── data/
 │   ├── prepare_dataset.py   # Download & process COCO + VizWiz
 │   ├── wcag_normalize.py    # WCAG 2.1/2.2 caption normalization
 │   ├── dataset_stats.py     # Dataset analysis
 │   └── collator.py          # PyTorch Dataset + DataCollator
 ├── training/
-│   ├── train.py             # QLoRA fine-tuning (Trainer API)
+│   ├── train.py             # QLoRA fine-tuning
 │   └── evaluate.py          # BLEU / CIDEr / METEOR / ROUGE-L
 ├── inference/
 │   ├── captioner.py         # Captioner class (inference wrapper)
 │   └── confidence.py        # Confidence estimation methods
-├── api/
-│   ├── main.py              # FastAPI application
-│   ├── models.py            # Pydantic request/response schemas
-│   └── content_filter.py   # Configurable NSFW filter
 ├── spaces/
 │   └── app.py               # HuggingFace Spaces Gradio demo
 ├── tests/
 │   └── test_core.py         # Core test suite
+├── main.py                  # CLI demo entry point
 ├── requirements.txt
 ├── .env.example
 ├── .gitignore
@@ -84,21 +78,16 @@ python training/evaluate.py \
   --eval_data ./data/processed/eval.json
 ```
 
-### 5. Run the REST API
+### 5. Run CLI inference
 
 ```bash
-cp .env.example .env
-# Configure .env with your environment settings
-
-uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+python main.py --image /path/to/image.jpg --model_path llava-hf/llava-1.5-7b-hf
 ```
 
-### 6. Test the API
+### 6. Run the Gradio demo
 
 ```bash
-curl -X POST http://localhost:8000/v1/caption \
-  -H "Authorization: Bearer <API_KEY>" \
-  -F "file=@/path/to/image.jpg"
+python spaces/app.py
 ```
 
 ## Model Details
